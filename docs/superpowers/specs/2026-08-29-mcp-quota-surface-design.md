@@ -26,6 +26,10 @@ Bề mặt mới không thay thế HTTP API. Hai mặt tiền cùng đứng trê
 - Sweep toàn bộ (`POST /refresh`) qua MCP. Một model không nên châm được một vòng
   quét toàn hệ thống.
 - OAuth cho MCP. Dùng lại `API_KEY` sẵn có.
+- Viết lại `src/config.ts` bằng zod. Nó không phải schema mà là parse env có nghiệp vụ
+  riêng — `PORT=0` hợp lệ, cắt dấu `/` cuối `UPSTREAM_URL`, và thông báo lỗi giải
+  thích *vì sao* `API_KEY` là bắt buộc. Đổi sang zod ở đó là đánh đổi chất lượng thông
+  báo lấy sự đồng nhất hình thức. Giữ nguyên, cùng 9 test đang xanh.
 
 ## 2. Quyết định đã chốt
 
@@ -37,6 +41,7 @@ Bề mặt mới không thay thế HTTP API. Hai mặt tiền cùng đứng trê
 | `force` | Không expose | §4.3 |
 | Kết quả tool | Chỉ text, định dạng Markdown | §5 |
 | Session | Stateless | §3.2 |
+| Hệ schema | zod cho toàn repo; gỡ TypeBox khỏi code của ta | §8.2 — một hệ thay vì hai |
 
 ## 3. Kiến trúc
 
@@ -250,7 +255,7 @@ Trường hợp cooldown đáng nói riêng. `quotaService.refreshOne` trả
 bao lâu thì đợi; model không biết thì gọi lại ngay — và đó chính là kiểu tải mà cả hàng
 đợi lẫn cooldown sinh ra để chặn.
 
-## 8. Cấu trúc file
+## 8. Cấu trúc file và thay đổi kèm theo
 
 ```
 src/mcp/
@@ -280,6 +285,43 @@ Chuyển `src/http/guards.ts` → `src/guards/index.ts`. Sửa 3 dòng import tr
 `src/http/index.ts` vẫn là nơi ghép mọi mặt tiền HTTP, gồm cả
 `.use(createMcpRoutes(...))` — `src/index.ts` không cần biết MCP tồn tại.
 
+### 8.2 Chuyển `src/http/schemas.ts` sang zod
+
+MCP SDK dùng zod. Nếu HTTP API giữ TypeBox, repo có hai hệ schema cho cùng một khái
+niệm — `QuotaEntry` sẽ được mô tả hai lần, hai cú pháp, và hai bản đó trôi khỏi nhau
+theo thời gian. Đó là loại nợ âm thầm: không có gì gãy ngay, chỉ là một ngày nào đó hai
+bản mô tả không còn khớp và không ai biết bản nào đúng.
+
+Nên: một hệ duy nhất, là zod.
+
+`t` chỉ xuất hiện ở đúng một file trong toàn repo — `src/http/schemas.ts`. Đó là toàn
+bộ bề mặt chuyển đổi. Ánh xạ thẳng, không có chỗ nào cần nghĩ:
+
+| TypeBox | zod |
+|---|---|
+| `t.Object({...})` | `z.object({...})` |
+| `t.String()` / `t.Number()` / `t.Boolean()` | `z.string()` / `z.number()` / `z.boolean()` |
+| `t.Nullable(X)` | `X.nullable()` |
+| `t.Array(X)` | `z.array(X)` |
+| `t.Record(t.String(), X)` | `z.record(z.string(), X)` |
+| `t.UnionEnum([...])` | `z.enum([...])` |
+| `t.Literal(true)` | `z.literal(true)` |
+
+Sau bước này, `import { t } from "elysia"` không còn trong repo. Nói chính xác: ta thôi
+*dùng* TypeBox, chứ TypeBox không biến mất — Elysia vẫn dùng nó bên trong. Cái ta gỡ là
+một hệ schema thứ hai trong code của mình.
+
+**Đã kiểm bằng thực nghiệm, không phải suy từ tài liệu.** Elysia 1.4 có Standard Schema,
+nhưng ví dụ trong docs đều là `body`/`params`, còn `schemas.ts` thì dùng 100% cho
+`response` — một khả năng đáng sợ là response validation im lặng bỏ qua schema không
+phải TypeBox. Probe trên `elysia@1.4.30` + `zod@4.5.2` cho thấy không phải vậy:
+handler trả sai shape bị chặn với **422** kèm `"on": "response"`, tức validation thật sự
+chạy. `status(401, {...})` với schema lỗi bằng zod, `query` optional, và `params` cũng
+đều đúng.
+
+Đây là điều kiện tiên quyết của cả mục này. Nếu bản Elysia nào đó về sau làm hỏng nó,
+`tests/http/server.test.ts` sẽ đỏ ngay — xem §9.
+
 ## 9. Test
 
 Theo đúng bố cục `tests/` hiện có, thêm `tests/mcp/`.
@@ -297,13 +339,35 @@ không client nào dùng được.
 Kiểm rằng `force` không lọt: assert trên schema `tools/list` trả về, không chỉ trên
 handler. Schema mới là thứ model nhìn thấy.
 
+### 9.1 Lưới an toàn cho việc chuyển sang zod
+
+`tests/http/server.test.ts` (238 dòng) gọi thẳng `app.handle(Request)` trên Elysia thật,
+nên nó đi qua đúng đường response validation. Đó là lưới có sẵn cho §8.2, và điều kiện
+nghiệm thu rất gọn: **chuyển `schemas.ts` sang zod mà không sửa một dòng nào trong file
+test đó.** Phải sửa test nghĩa là hành vi đã đổi, không phải cú pháp đã đổi.
+
+Thêm đúng một test mới: một handler cố tình trả sai shape phải nhận 422. Nó chốt lại
+kết quả probe ở §8.2 thành một điều kiện thường trực, để lần nâng Elysia sau này không
+âm thầm biến response validation thành no-op.
+
 ## 10. Cấu hình và tài liệu
 
 Không thêm biến môi trường. Không có cờ bật/tắt MCP: một endpoint đã guard bằng
 `API_KEY` không cần thêm công tắc, và mỗi công tắc là một trạng thái nữa phải test.
 
-`package.json` thêm đúng một dependency trực tiếp:
-`"@modelcontextprotocol/server": "2.0.0"` — pin chính xác, không `^`.
+`package.json` thêm hai dependency trực tiếp:
+
+```jsonc
+"@modelcontextprotocol/server": "2.0.0",   // pin chính xác, không ^
+"zod": "^4.2.0"                            // khớp dải mà SDK khai báo
+```
+
+`zod` phải là dependency **trực tiếp**, không để nó là dep bắc cầu của SDK: sau §8.2 thì
+`src/http/` cũng import nó, mà một package mình import thẳng thì phải tự khai báo.
+
+Dải `^4.2.0` cố ý trùng dải của SDK để bun giải về **một** bản zod duy nhất. Hai bản zod
+cùng tồn tại là lỗi khó chẩn đoán — schema dựng bởi bản này không được bản kia nhận, và
+thông báo lỗi sẽ nói về những thứ trông hoàn toàn hợp lệ.
 
 `README.md` thêm một mục MCP: bảng ba tool, và lệnh đăng ký thật:
 
@@ -322,10 +386,16 @@ xác phiên bản. `tests/mcp/server.test.ts` là lưới an toàn khi nâng c�
 bằng JSON-RPC thô nên không phụ thuộc API của SDK, và sẽ gãy đúng lúc nếu hành vi trên
 dây đổi.
 
-**Thêm `zod@4` vào một project đang có đúng một runtime dependency.** `zod` là dep bắc
-cầu của SDK và chỉ dùng trong `src/mcp/`. Phần còn lại giữ TypeBox (`t`) của Elysia.
-Chấp nhận hai hệ schema trong một repo, ranh giới rõ theo thư mục — đổi lại không phải
-tự bảo trì tính đúng đắn của protocol.
+**Chuyển sang zod là thay đổi lan rộng nhất trong toàn bộ việc này.** Nó chạm code đang
+chạy tốt, vì một lợi ích dài hạn chứ không phải để sửa lỗi nào đang có. Cái mua được là
+repo chỉ còn một cách mô tả dữ liệu; cái trả là một lần sửa có rủi ro trên đường phục vụ
+thật. Điều khiến đánh đổi này chấp nhận được là ánh xạ cơ học (§8.2) cộng với lưới test
+đã có sẵn (§9.1) — và tiêu chí "không sửa file test nào" biến rủi ro đó thành thứ kiểm
+được, thay vì thứ phải tin.
+
+**Hai bản zod cùng tồn tại.** Rủi ro thật sự của việc thêm zod không phải kích thước
+dependency mà là trùng lặp phiên bản — xem §10. Sau khi cài, kiểm bằng
+`bun pm ls | grep zod` rằng chỉ có một bản.
 
 **Model vẫn có thể gọi `refresh_quota` liên tục cho nhiều connection khác nhau**, vì
 cooldown tính riêng từng connection. Hàng đợi một worker có delay đã chặn fan-out song
