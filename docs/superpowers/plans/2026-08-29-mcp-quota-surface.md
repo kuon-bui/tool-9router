@@ -37,19 +37,19 @@
 - Consumes: nothing
 - Produces: `zod` (`^4.2.0`) và `@modelcontextprotocol/server` (`2.0.0` chính xác) khả dụng cho mọi task sau
 
-- [ ] **Step 1: Cài zod**
+- [x] **Step 1: Cài zod**
 
 ```bash
 bun add zod@^4.2.0
 ```
 
-- [ ] **Step 2: Cài MCP SDK, pin chính xác — không dùng `^`**
+- [x] **Step 2: Cài MCP SDK, pin chính xác — không dùng `^`**
 
 ```bash
 bun add --exact @modelcontextprotocol/server@2.0.0
 ```
 
-- [ ] **Step 3: Xác nhận `package.json` ghi đúng hai dòng này**
+- [x] **Step 3: Xác nhận `package.json` ghi đúng hai dòng này**
 
 ```bash
 grep -A5 '"dependencies"' package.json
@@ -63,7 +63,7 @@ Expected: thấy đúng
 ```
 (`elysia` giữ nguyên dòng cũ — không đổi.)
 
-- [ ] **Step 4: Xác nhận chỉ có MỘT bản zod được giải trong cây dependency**
+- [x] **Step 4: Xác nhận chỉ có MỘT bản zod được giải trong cây dependency**
 
 ```bash
 bun pm ls --all | grep -i zod
@@ -71,7 +71,7 @@ bun pm ls --all | grep -i zod
 
 Expected: đúng một dòng `zod@4.x.x`. Nếu thấy hai dòng với số bản khác nhau, dừng lại — đây là lỗi khó chẩn đoán mà spec (`docs/superpowers/specs/2026-08-29-mcp-quota-surface-design.md` §11) đã cảnh báo: hai bản zod cùng tồn tại khiến schema dựng bởi bản này không được bản kia nhận.
 
-- [ ] **Step 5: Chạy lại toàn bộ test hiện có — thêm dependency không được làm hỏng gì**
+- [x] **Step 5: Chạy lại toàn bộ test hiện có — thêm dependency không được làm hỏng gì**
 
 ```bash
 bun test
@@ -79,7 +79,7 @@ bun test
 
 Expected: PASS, số lượng test không đổi so với trước khi thêm dependency.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add package.json bun.lock
@@ -103,7 +103,7 @@ git commit -m "chore: add zod and pin @modelcontextprotocol/server@2.0.0"
 
 Đây là refactor cơ học, không đổi hành vi. `src/guards/` nằm cùng cấp với `src/http/`, nên nội dung file giữ nguyên y hệt — chỉ đường dẫn `import` ở ba nơi gọi nó thay đổi.
 
-- [ ] **Step 1: Tạo `src/guards/index.ts` với đúng nội dung của `src/http/guards.ts` hiện tại**
+- [x] **Step 1: Tạo `src/guards/index.ts` với đúng nội dung của `src/http/guards.ts` hiện tại**
 
 ```ts
 import { Elysia } from "elysia"
@@ -153,13 +153,13 @@ export function createGuards({ config, tokens }: GuardDeps) {
 }
 ```
 
-- [ ] **Step 2: Xoá `src/http/guards.ts`**
+- [x] **Step 2: Xoá `src/http/guards.ts`**
 
 ```bash
 rm src/http/guards.ts
 ```
 
-- [ ] **Step 3: Sửa import trong `src/http/quotas.ts`**
+- [x] **Step 3: Sửa import trong `src/http/quotas.ts`**
 
 Tìm dòng:
 ```ts
@@ -170,7 +170,7 @@ Thay bằng:
 import { createGuards, type GuardDeps } from "../guards"
 ```
 
-- [ ] **Step 4: Sửa import trong `src/http/refresh.ts`** — cùng thay đổi hệt Step 3
+- [x] **Step 4: Sửa import trong `src/http/refresh.ts`** — cùng thay đổi hệt Step 3
 
 Tìm dòng:
 ```ts
@@ -181,7 +181,7 @@ Thay bằng:
 import { createGuards, type GuardDeps } from "../guards"
 ```
 
-- [ ] **Step 5: Sửa import trong `src/http/health.ts`**
+- [x] **Step 5: Sửa import trong `src/http/health.ts`**
 
 Tìm dòng:
 ```ts
@@ -192,7 +192,7 @@ Thay bằng:
 import { TOKEN_HINT } from "../guards"
 ```
 
-- [ ] **Step 6: Chạy toàn bộ test — phải xanh không cần sửa gì trong `tests/`**
+- [x] **Step 6: Chạy toàn bộ test — phải xanh không cần sửa gì trong `tests/`**
 
 ```bash
 bun test
@@ -200,7 +200,7 @@ bun test
 
 Expected: PASS, số test giữ nguyên như Task 1 Step 5. Đây là refactor thuần vị trí file — nếu có test đỏ, đó là import path sai, không phải hành vi cần sửa.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A src/guards src/http/guards.ts src/http/quotas.ts src/http/refresh.ts src/http/health.ts
@@ -219,7 +219,7 @@ git commit -m "refactor: move guards out of http/ into its own domain"
 - Consumes: `GuardDeps` (không đổi)
 - Produces: macro `apiKey` chấp nhận key qua `x-api-key` **hoặc** `Authorization: Bearer <key>`; ưu tiên `x-api-key` nếu cả hai cùng có mặt
 
-- [ ] **Step 1: Viết test thất bại — thêm vào cuối `describe("xác thực", ...)` trong `tests/http/server.test.ts`**
+- [x] **Step 1: Viết test thất bại — thêm vào cuối `describe("xác thực", ...)` trong `tests/http/server.test.ts`**
 
 Tìm khối:
 ```ts
@@ -257,7 +257,7 @@ Thay bằng (thêm hai test mới trước dấu đóng `})`):
 })
 ```
 
-- [ ] **Step 2: Chạy để xác nhận hai test mới thất bại**
+- [x] **Step 2: Chạy để xác nhận hai test mới thất bại**
 
 ```bash
 bun test tests/http/server.test.ts
@@ -265,7 +265,7 @@ bun test tests/http/server.test.ts
 
 Expected: FAIL — test "Authorization: Bearer đúng key -> 200" nhận 401 thay vì 200 (macro hiện tại chỉ đọc `x-api-key`).
 
-- [ ] **Step 3: Sửa macro `apiKey` trong `src/guards/index.ts`**
+- [x] **Step 3: Sửa macro `apiKey` trong `src/guards/index.ts`**
 
 Tìm:
 ```ts
@@ -313,7 +313,7 @@ export function createGuards({ config, tokens }: GuardDeps) {
     },
 ```
 
-- [ ] **Step 4: Chạy lại để xác nhận xanh**
+- [x] **Step 4: Chạy lại để xác nhận xanh**
 
 ```bash
 bun test tests/http/server.test.ts
@@ -321,7 +321,7 @@ bun test tests/http/server.test.ts
 
 Expected: PASS, toàn bộ test trong file kể cả hai test mới.
 
-- [ ] **Step 5: Chạy toàn bộ suite**
+- [x] **Step 5: Chạy toàn bộ suite**
 
 ```bash
 bun test
@@ -329,7 +329,7 @@ bun test
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/guards/index.ts tests/http/server.test.ts
@@ -350,7 +350,7 @@ git commit -m "feat: accept Authorization Bearer alongside x-api-key"
 
 **Điều kiện nghiệm thu (từ spec §9.1): `tests/http/server.test.ts` phải xanh mà KHÔNG sửa một dòng nào trong file đó.**
 
-- [ ] **Step 1: Viết test mới trước — `tests/http/schemas.test.ts`**
+- [x] **Step 1: Viết test mới trước — `tests/http/schemas.test.ts`**
 
 ```ts
 import { describe, expect, it } from "bun:test"
@@ -382,7 +382,7 @@ describe("quotaListSchema (zod) qua Elysia response validation", () => {
 })
 ```
 
-- [ ] **Step 2: Chạy để xác nhận thất bại (schema hiện tại là TypeBox, import từ `schemas.ts` vẫn hoạt động nhưng ta cần chắc test này tồn tại và phản ánh đúng hành vi trước khi đổi)**
+- [x] **Step 2: Chạy để xác nhận thất bại (schema hiện tại là TypeBox, import từ `schemas.ts` vẫn hoạt động nhưng ta cần chắc test này tồn tại và phản ánh đúng hành vi trước khi đổi)**
 
 ```bash
 bun test tests/http/schemas.test.ts
@@ -390,7 +390,7 @@ bun test tests/http/schemas.test.ts
 
 Expected: PASS ngay cả trước khi đổi — vì TypeBox cũng chặn sai shape với 422. Đây không phải bug; mục đích của bước này là có sẵn bài kiểm chứng trước khi đổi triển khai, để Step 4 chứng minh hành vi không đổi qua zod. Ghi nhận PASS rồi tiếp tục.
 
-- [ ] **Step 3: Viết lại toàn bộ `src/http/schemas.ts` bằng zod**
+- [x] **Step 3: Viết lại toàn bộ `src/http/schemas.ts` bằng zod**
 
 ```ts
 import { z } from "zod"
@@ -450,7 +450,7 @@ export const refreshAcceptedSchema = z.object({
 })
 ```
 
-- [ ] **Step 4: Xác nhận `tests/http/server.test.ts` xanh KHÔNG SỬA GÌ trong file đó**
+- [x] **Step 4: Xác nhận `tests/http/server.test.ts` xanh KHÔNG SỬA GÌ trong file đó**
 
 ```bash
 git diff --stat tests/http/server.test.ts
@@ -464,7 +464,7 @@ bun test tests/http/server.test.ts
 
 Expected: PASS, toàn bộ test.
 
-- [ ] **Step 5: Xác nhận `tests/http/schemas.test.ts` vẫn xanh với schema mới**
+- [x] **Step 5: Xác nhận `tests/http/schemas.test.ts` vẫn xanh với schema mới**
 
 ```bash
 bun test tests/http/schemas.test.ts
@@ -472,7 +472,7 @@ bun test tests/http/schemas.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 6: Xác nhận không còn `t` của TypeBox nào được import trong `src/`**
+- [x] **Step 6: Xác nhận không còn `t` của TypeBox nào được import trong `src/`**
 
 ```bash
 grep -rn 'import { t }' src
@@ -481,7 +481,7 @@ grep -rn 'from "elysia"' src | grep -v '^src/guards\|^src/http/health.ts\|^src/h
 
 Expected: dòng đầu không có output. Dòng hai chỉ để soát bằng mắt — mọi `import { Elysia }` là bình thường, không import `t`.
 
-- [ ] **Step 7: Chạy toàn bộ suite**
+- [x] **Step 7: Chạy toàn bộ suite**
 
 ```bash
 bun test
@@ -489,7 +489,7 @@ bun test
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/http/schemas.ts tests/http/schemas.test.ts
@@ -511,7 +511,7 @@ git commit -m "refactor: convert http response schemas from TypeBox to zod"
   - `formatSingleEntry(entry: QuotaEntry): string`
   - `formatRefreshedEntry(entry: QuotaEntry): string`
 
-- [ ] **Step 1: Viết test thất bại — `tests/mcp/format.test.ts`**
+- [x] **Step 1: Viết test thất bại — `tests/mcp/format.test.ts`**
 
 ```ts
 import { describe, expect, it } from "bun:test"
@@ -645,7 +645,7 @@ describe("formatRefreshedEntry", () => {
 })
 ```
 
-- [ ] **Step 2: Chạy để xác nhận thất bại**
+- [x] **Step 2: Chạy để xác nhận thất bại**
 
 ```bash
 bun test tests/mcp/format.test.ts
@@ -653,7 +653,7 @@ bun test tests/mcp/format.test.ts
 
 Expected: FAIL với `Cannot find module '../../src/mcp/format'` (file chưa tồn tại).
 
-- [ ] **Step 3: Viết `src/mcp/format.ts`**
+- [x] **Step 3: Viết `src/mcp/format.ts`**
 
 ```ts
 import type { EntryStatus, QuotaEntry, QuotaPool } from "../types"
@@ -754,7 +754,7 @@ export function formatRefreshedEntry(entry: QuotaEntry): string {
 }
 ```
 
-- [ ] **Step 4: Chạy lại để xác nhận xanh**
+- [x] **Step 4: Chạy lại để xác nhận xanh**
 
 ```bash
 bun test tests/mcp/format.test.ts
@@ -762,7 +762,7 @@ bun test tests/mcp/format.test.ts
 
 Expected: PASS, toàn bộ test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mcp/format.ts tests/mcp/format.test.ts
@@ -789,7 +789,7 @@ git commit -m "feat: add Markdown formatter for MCP quota results"
 
 `McpToolsDeps` khai báo interface của `quotaService` bằng tay thay vì import type `QuotaService` từ `src/http/quotaService.ts`. Lý do: `src/http/index.ts` (Task 7) sẽ import `createMcpRoutes` từ `../mcp`, nên nếu `mcp/tools.ts` import ngược một type cụ thể từ `../http/quotaService`, đó là một cross-domain import trỏ thẳng vào file thay vì qua barrel — đúng kiểu vi phạm mà Task 2 vừa sửa cho guards. Định nghĩa lại interface hẹp ở đây (chỉ 3 method thực dùng) tránh hẳn câu hỏi đó: `mcp/` chỉ phụ thuộc `../types`, đúng bất biến "MCP không biết `quotaService` sống ở đâu" của spec §3.1. Vì TypeScript dùng structural typing, `QuotaService` thật (từ `createQuotaService`) tự động khớp interface này — không cần ép kiểu ở nơi gọi.
 
-- [ ] **Step 1: Viết test thất bại — `tests/mcp/tools.test.ts`**
+- [x] **Step 1: Viết test thất bại — `tests/mcp/tools.test.ts`**
 
 ```ts
 import { describe, expect, it } from "bun:test"
@@ -907,7 +907,7 @@ describe("refreshQuota", () => {
 })
 ```
 
-- [ ] **Step 2: Chạy để xác nhận thất bại**
+- [x] **Step 2: Chạy để xác nhận thất bại**
 
 ```bash
 bun test tests/mcp/tools.test.ts
@@ -915,7 +915,7 @@ bun test tests/mcp/tools.test.ts
 
 Expected: FAIL với `Cannot find module '../../src/mcp/tools'`.
 
-- [ ] **Step 3: Viết `src/mcp/tools.ts`**
+- [x] **Step 3: Viết `src/mcp/tools.ts`**
 
 ```ts
 import { z } from "zod"
@@ -1007,7 +1007,7 @@ export function createMcpTools(deps: McpToolsDeps) {
 export type McpTools = ReturnType<typeof createMcpTools>
 ```
 
-- [ ] **Step 4: Chạy lại để xác nhận xanh**
+- [x] **Step 4: Chạy lại để xác nhận xanh**
 
 ```bash
 bun test tests/mcp/tools.test.ts
@@ -1015,7 +1015,7 @@ bun test tests/mcp/tools.test.ts
 
 Expected: PASS, toàn bộ test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mcp/tools.ts tests/mcp/tools.test.ts
@@ -1046,7 +1046,7 @@ git commit -m "feat: add MCP tool schemas and handlers over quotaService"
 
 `handler.close()` (dọn các exchange "modern" còn dang dở) **không được gọi ở đường tắt máy** trong plan này: vì `GET /mcp` luôn 405 nên không bao giờ có SSE stream nào được giữ mở, và mỗi `tools/call` là một round-trip trọn vẹn trong một `await handler.fetch(request)` — không có gì thực sự "dang dở" để đóng khi `app.stop()` được gọi. Nếu sau này thiết kế đổi sang cho phép GET/SSE, đây là chỗ phải quay lại nối `handler.close()` vào `RunningServer.stop()` trong `src/index.ts`.
 
-- [ ] **Step 1: Viết test thất bại — `tests/mcp/server.test.ts`**
+- [x] **Step 1: Viết test thất bại — `tests/mcp/server.test.ts`**
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
@@ -1198,7 +1198,7 @@ describe("giao thức JSON-RPC", () => {
 })
 ```
 
-- [ ] **Step 2: Chạy để xác nhận thất bại**
+- [x] **Step 2: Chạy để xác nhận thất bại**
 
 ```bash
 bun test tests/mcp/server.test.ts
@@ -1206,7 +1206,7 @@ bun test tests/mcp/server.test.ts
 
 Expected: FAIL — `createServer` chưa mount `/mcp`, mọi request tới đó nhận 404 thay vì các mã mong đợi.
 
-- [ ] **Step 3: Viết `src/mcp/server.ts`**
+- [x] **Step 3: Viết `src/mcp/server.ts`**
 
 ```ts
 import { McpServer } from "@modelcontextprotocol/server"
@@ -1276,7 +1276,7 @@ export function buildMcpServer(deps: McpToolsDeps): McpServer {
 }
 ```
 
-- [ ] **Step 4: Viết `src/mcp/index.ts`**
+- [x] **Step 4: Viết `src/mcp/index.ts`**
 
 ```ts
 import { Elysia } from "elysia"
@@ -1302,7 +1302,7 @@ export function createMcpRoutes(deps: McpRouteDeps) {
 }
 ```
 
-- [ ] **Step 5: Mount vào `src/http/index.ts`**
+- [x] **Step 5: Mount vào `src/http/index.ts`**
 
 Tìm:
 ```ts
@@ -1368,7 +1368,7 @@ export function createServer(deps: ServerDeps) {
 }
 ```
 
-- [ ] **Step 6: Chạy lại test mới để xác nhận xanh**
+- [x] **Step 6: Chạy lại test mới để xác nhận xanh**
 
 ```bash
 bun test tests/mcp/server.test.ts
@@ -1376,7 +1376,7 @@ bun test tests/mcp/server.test.ts
 
 Expected: PASS, toàn bộ test kể cả assert "không có `force`" trong `tools/list`.
 
-- [ ] **Step 7: Chạy toàn bộ suite**
+- [x] **Step 7: Chạy toàn bộ suite**
 
 ```bash
 bun test
@@ -1384,7 +1384,7 @@ bun test
 
 Expected: PASS, không có test nào trong `tests/http/` bị ảnh hưởng bởi việc thêm route mới.
 
-- [ ] **Step 8: Type-check toàn repo**
+- [x] **Step 8: Type-check toàn repo**
 
 ```bash
 bunx tsc -p tsconfig.json
@@ -1392,7 +1392,7 @@ bunx tsc -p tsconfig.json
 
 Expected: không có lỗi. Đây là lần đầu `strict` + `noUncheckedIndexedAccess` chạy qua toàn bộ `src/mcp/` và `src/http/schemas.ts` mới — nếu có lỗi kiểu, sửa tại đây trước khi commit.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/mcp/server.ts src/mcp/index.ts src/http/index.ts tests/mcp/server.test.ts
@@ -1410,7 +1410,7 @@ git commit -m "feat: wire the MCP Streamable HTTP endpoint into the Elysia serve
 - Consumes: nothing mới
 - Produces: mục MCP trong README, cùng lệnh đăng ký client thật
 
-- [ ] **Step 1: Thêm mục MCP vào `README.md`**
+- [x] **Step 1: Thêm mục MCP vào `README.md`**
 
 Tìm đoạn kết thúc bằng:
 ```
@@ -1451,7 +1451,7 @@ thay cho `x-api-key` — cả hai đều được server chấp nhận.
 ## Lưu ý vận hành
 ```
 
-- [ ] **Step 2: Soát lại toàn bộ ba bất biến cứng của spec bằng grep**
+- [x] **Step 2: Soát lại toàn bộ ba bất biến cứng của spec bằng grep**
 
 ```bash
 # Không còn TypeBox trong code của ta
@@ -1466,7 +1466,7 @@ bun pm ls --all | grep -i zod
 
 Expected: dòng 1 và dòng 2 không có output. Dòng 3 đúng một bản.
 
-- [ ] **Step 3: Chạy toàn bộ suite lần cuối**
+- [x] **Step 3: Chạy toàn bộ suite lần cuối**
 
 ```bash
 bun test
@@ -1474,7 +1474,7 @@ bun test
 
 Expected: PASS, toàn bộ.
 
-- [ ] **Step 4: Type-check lần cuối**
+- [x] **Step 4: Type-check lần cuối**
 
 ```bash
 bunx tsc -p tsconfig.json
@@ -1482,7 +1482,7 @@ bunx tsc -p tsconfig.json
 
 Expected: không có lỗi.
 
-- [ ] **Step 5: Smoke test thủ công — server thật khởi động và `/mcp` trả lời đúng**
+- [x] **Step 5: Smoke test thủ công — server thật khởi động và `/mcp` trả lời đúng**
 
 ```bash
 API_KEY=smoke-test PORT=0 bun run src/index.ts &
@@ -1492,7 +1492,7 @@ kill %1 2>/dev/null
 
 (Bước này chỉ để chắc `bun run start` không crash ngay khi nạp `src/mcp/` — smoke test tự động hoá đầy đủ đã có ở `tests/mcp/server.test.ts` và `tests/smoke.test.ts`.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add README.md
