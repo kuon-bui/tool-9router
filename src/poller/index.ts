@@ -1,7 +1,7 @@
-import type { SerialQueue } from "./queue"
-import type { SnapshotStore } from "./store"
-import type { UpstreamClient } from "./upstream"
-import type { Connection, QuotaEntry } from "./types"
+import type { SerialQueue } from "../queue"
+import type { SnapshotStore } from "../store"
+import type { UpstreamClient } from "../upstream"
+import type { Connection, QuotaEntry } from "../types"
 
 export type PollerDeps = {
   upstream: UpstreamClient

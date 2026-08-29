@@ -1,10 +1,10 @@
 import { Elysia } from "elysia"
 import { timingSafeEqual } from "node:crypto"
-import type { Config } from "./config"
-import type { TokenProvider } from "./cliToken"
-import type { Poller } from "./poller"
-import type { SnapshotStore } from "./store"
-import { isEntryStatus } from "./types"
+import type { Config } from "../config"
+import type { TokenProvider } from "../auth"
+import type { Poller } from "../poller"
+import type { SnapshotStore } from "../store"
+import { isEntryStatus } from "../types"
 
 export type ServerDeps = {
   config: Config

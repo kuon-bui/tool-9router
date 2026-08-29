@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test"
-import { SnapshotStore } from "../src/store"
-import type { Connection } from "../src/types"
+import { SnapshotStore } from "../../src/store"
+import type { Connection } from "../../src/types"
 
 const kiro: Connection = { id: "c1", provider: "kiro", name: "Kiro #1", authType: "oauth" }
 const codex: Connection = { id: "c2", provider: "codex", name: "Codex", authType: "oauth" }

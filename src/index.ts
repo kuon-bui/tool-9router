@@ -1,8 +1,8 @@
-import { createTokenProvider, resolveDataDirFromEnv } from "./cliToken"
+import { createTokenProvider, resolveDataDirFromEnv } from "./auth"
 import { loadConfig } from "./config"
 import { Poller } from "./poller"
 import { SerialQueue } from "./queue"
-import { createServer } from "./server"
+import { createServer } from "./http"
 import { SnapshotStore } from "./store"
 import { UpstreamClient } from "./upstream"
 

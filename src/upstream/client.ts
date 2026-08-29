@@ -1,6 +1,6 @@
-import type { TokenProvider } from "./cliToken"
+import type { TokenProvider } from "../auth"
 import { classifyUsageResponse, normalizeConnections } from "./normalize"
-import type { Connection, UsageResult } from "./types"
+import type { Connection, UsageResult } from "../types"
 
 export type UpstreamClientOptions = {
   baseUrl: string

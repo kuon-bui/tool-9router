@@ -1,11 +1,11 @@
-import { applyResult, pendingEntry } from "./normalize"
+import { applyResult, pendingEntry } from "./apply"
 import type {
   AppliedResult,
   Connection,
   EntryStatus,
   QuotaEntry,
   StoredEntry
-} from "./types"
+} from "../types"
 
 export type SnapshotStoreOptions = {
   staleAfterMs: number

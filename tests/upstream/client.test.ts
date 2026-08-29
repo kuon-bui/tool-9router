@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test"
-import { startFakeRouter, type FakeRouter } from "./fixtures/fakeRouter"
-import { UpstreamClient } from "../src/upstream"
-import type { TokenProvider } from "../src/cliToken"
+import { startFakeRouter, type FakeRouter } from "../fixtures/fakeRouter"
+import { UpstreamClient } from "../../src/upstream"
+import type { TokenProvider } from "../../src/auth"
 
 const tokens: TokenProvider = {
   get: async () => "abcdef0123456789",

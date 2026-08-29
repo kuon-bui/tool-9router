@@ -50,19 +50,23 @@ Cái giá của hàng đợi đơn: refresh một connection có thể chờ và
 
 ### 3.2 Module
 
-| Module | Trách nhiệm | Phụ thuộc |
+Mỗi miền là một thư mục con của `src/`, có `index.ts` làm barrel export; nơi khác import qua đường dẫn thư mục (`./auth`, `../store`, …) chứ không trỏ thẳng vào file cụ thể.
+
+| Thư mục / file | Trách nhiệm | Phụ thuộc |
 |---|---|---|
 | `src/config.ts` | Đọc và validate env, fail fast lúc khởi động | — |
-| `src/cliToken.ts` | Giải `DATA_DIR`, đọc hai file, băm ra token 16 hex | config |
-| `src/upstream.ts` | Client mỏng của 9Router: `listConnections()`, `fetchUsage(id, force)` | cliToken, config |
-| `src/queue.ts` | Hàng đợi ưu tiên, một worker, delay giữa các job, dedup theo key | — |
-| `src/normalize.ts` | Ép response 9Router về shape ổn định, phân loại trạng thái | — |
-| `src/store.ts` | Snapshot in-memory, giữ last-good khi lỗi | — |
-| `src/poller.ts` | Vòng quét định kỳ, nạp job ưu tiên thấp | queue, store, upstream |
-| `src/server.ts` | Route Elysia và macro `apiKey` | store, queue, config |
+| `src/types.ts` | Kiểu dùng chung xuyên suốt mọi miền | — |
+| `src/auth/` | Giải `DATA_DIR`, đọc hai file, băm ra token 16 hex | config |
+| `src/upstream/` | Client mỏng của 9Router (`client.ts`) và diễn giải response thô (`normalize.ts`: `normalizePools`, `classifyUsageResponse`, `normalizeConnections`) | auth, config, types |
+| `src/queue/` | Hàng đợi ưu tiên, một worker, delay giữa các job, dedup theo key | — |
+| `src/store/` | Snapshot in-memory (`snapshotStore.ts`) và cách một kết quả được áp vào entry (`apply.ts`: `pendingEntry`, `applyResult`) | types |
+| `src/poller/` | Vòng quét định kỳ, nạp job ưu tiên thấp | queue, store, upstream |
+| `src/http/` | Route Elysia và macro `apiKey` | store, poller, auth, config, types |
 | `src/index.ts` | Ghép mọi thứ, khởi động, graceful shutdown | tất cả |
 
-`queue.ts`, `store.ts`, `normalize.ts` không biết gì về 9Router. Ba module này test được mà không cần network.
+`normalize.ts` (trong `upstream/`) và `apply.ts` (trong `store/`) từng nằm chung một file `normalize.ts` duy nhất; tách ra vì chúng phục vụ hai tiêu dùng khác nhau — một bên diễn giải response HTTP thô, một bên biến đổi state nội bộ.
+
+`queue/`, `store/`, và phần `normalize.ts`/`apply.ts` không biết gì về 9Router. Các module này test được mà không cần network.
 
 ## 4. Xác thực với 9Router
 

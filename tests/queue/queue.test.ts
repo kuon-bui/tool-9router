@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { SerialQueue } from "../src/queue"
+import { SerialQueue } from "../../src/queue"
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 

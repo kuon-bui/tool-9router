@@ -1,3 +1,7 @@
 node_modules/
 .env
 *.log
+
+# Dữ liệu runtime của một instance 9Router thật (machine-id, jwt-secret, db) —
+# không phải của tool này, không bao giờ được commit.
+data/
