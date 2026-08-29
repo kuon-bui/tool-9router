@@ -4,6 +4,7 @@ import type { TokenProvider } from "../auth"
 import type { Poller } from "../poller"
 import type { SnapshotStore } from "../store"
 import { createHealthRoutes } from "./health"
+import { createMcpRoutes } from "../mcp"
 import { createQuotasRoutes } from "./quotas"
 import { createQuotaService } from "./quotaService"
 import { createRefreshRoutes } from "./refresh"
@@ -24,4 +25,5 @@ export function createServer(deps: ServerDeps) {
     .use(createHealthRoutes({ store, poller, tokens }))
     .use(createQuotasRoutes({ config, tokens, quotaService }))
     .use(createRefreshRoutes({ config, tokens, quotaService }))
+    .use(createMcpRoutes({ config, tokens, quotaService }))
 }

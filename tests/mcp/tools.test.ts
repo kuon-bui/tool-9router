@@ -68,10 +68,10 @@ describe("getQuota", () => {
 
 describe("refreshQuota", () => {
   it("gọi refreshOne với force=false luôn luôn", async () => {
-    let receivedForce: boolean | null = null
+    const captured: { force: boolean | null } = { force: null }
     const service = fakeService({
       refreshOne: async (id, force) => {
-        receivedForce = force
+        captured.force = force
         return { kind: "ok" as const, entry: okEntry }
       }
     })
@@ -79,7 +79,7 @@ describe("refreshQuota", () => {
 
     await tools.refreshQuota({ connection_id: "c1" })
 
-    expect(receivedForce).toBe(false)
+    expect(captured.force).toBe(false)
   })
 
   it("trả isError kèm connection_id khi notFound", async () => {
