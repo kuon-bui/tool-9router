@@ -53,6 +53,29 @@ curl -H "x-api-key: $API_KEY" http://localhost:20129/quotas
 Tên các pool trong `quotas` khác nhau theo provider (`credit`, `session`,
 `weekly`, `premium_requests`, …). **Đừng hardcode — hãy duyệt key.**
 
+## MCP
+
+Ngoài HTTP API, server còn phục vụ [MCP](https://modelcontextprotocol.io) qua
+Streamable HTTP tại `/mcp`, để model tự tra cứu quota mà không cần ai viết sẵn
+code gọi HTTP API. Cùng một `API_KEY`, cùng một tầng nghiệp vụ — không có đường
+riêng ra 9Router, nên hàng đợi và cooldown vẫn áp dụng y hệt HTTP API.
+
+| Tool | Tham số | Ghi chú |
+|---|---|---|
+| `list_quotas` | `provider?`, `status?` | Đọc snapshot, không gọi 9Router |
+| `get_quota` | `connection_id` | Đọc snapshot, không gọi 9Router |
+| `refresh_quota` | `connection_id` | Gọi thật ra 9Router, có cooldown; không có tham số `force` |
+
+Đăng ký với Claude Code:
+
+```bash
+claude mcp add --transport http 9router-quota http://localhost:20129/mcp \
+  --header "x-api-key: $API_KEY"
+```
+
+Client chỉ cho điền một token duy nhất thì gửi `Authorization: Bearer $API_KEY`
+thay cho `x-api-key` — cả hai đều được server chấp nhận.
+
 ## Lưu ý vận hành
 
 Quota không được lưu xuống đĩa. Restart là mất, giống chính 9Router. Muốn có
