@@ -51,7 +51,7 @@ describe("loadConfig", () => {
   })
 
   it("giữ nguyên DATA_DIR khi được đặt", () => {
-    const cfg = loadConfig({ ...base, DATA_DIR: "C:\data\9router" })
-    expect(cfg.dataDirOverride).toBe("C:\data\9router")
+    const cfg = loadConfig({ ...base, DATA_DIR: "C:\\data\\9router" })
+    expect(cfg.dataDirOverride).toBe("C:\\data\\9router")
   })
 })
