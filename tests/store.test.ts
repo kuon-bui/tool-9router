@@ -125,3 +125,28 @@ describe("remove", () => {
     expect(store.get("c1")).toBeNull()
   })
 })
+
+describe("markAllStale", () => {
+  it("đánh dấu mọi entry là stale dù chưa cũ theo tuổi", () => {
+    store.syncConnections([kiro])
+    store.apply(kiro, okResult)
+    expect(store.get("c1")?.stale).toBe(false)
+
+    store.markAllStale()
+
+    expect(store.get("c1")?.stale).toBe(true)
+  })
+
+  it("giữ nguyên số liệu quota, chỉ đổi cờ stale", () => {
+    store.syncConnections([kiro])
+    store.apply(kiro, okResult)
+    store.markAllStale()
+
+    expect(store.get("c1")?.quotas).toEqual(okResult.quotas)
+    expect(store.get("c1")?.status).toBe("ok")
+  })
+
+  it("không ảnh hưởng gì khi store rỗng", () => {
+    expect(() => store.markAllStale()).not.toThrow()
+  })
+})

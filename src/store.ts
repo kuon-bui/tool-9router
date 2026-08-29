@@ -92,6 +92,18 @@ export class SnapshotStore {
     this.#lastSweepAt = new Date(this.#now()).toISOString()
   }
 
+  /**
+   * Dùng khi cả vòng quét thất bại (ví dụ không lấy được danh sách connection
+   * từ 9Router) — ta không biết trạng thái mới của bất kỳ connection nào, nên
+   * chỉ có thể nói dữ liệu đang có là cũ. Số liệu quota và status giữ nguyên,
+   * chỉ có `stale` bị ép thành true bất kể tuổi thực của dữ liệu.
+   */
+  markAllStale(): void {
+    for (const stored of this.#entries.values()) {
+      stored.failed = true
+    }
+  }
+
   lastSweepAt(): string | null {
     return this.#lastSweepAt
   }

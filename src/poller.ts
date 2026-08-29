@@ -50,6 +50,10 @@ export class Poller {
       this.#healthy = true
     } catch (error) {
       this.#healthy = false
+      // Không biết trạng thái mới của connection nào — giữ nguyên số liệu cũ
+      // nhưng đánh dấu cả snapshot là cũ, đúng yêu cầu "9Router chết giữa
+      // chừng vẫn phục vụ snapshot cũ với stale:true".
+      store.markAllStale()
       this.#report(`Không lấy được danh sách connection: ${describe(error)}`)
       return
     }
@@ -57,7 +61,15 @@ export class Poller {
     store.syncConnections(connections)
 
     for (const conn of connections) {
-      await this.#fetchInto(conn, "low", false)
+      try {
+        await this.#fetchInto(conn, "low", false)
+      } catch (error) {
+        // UpstreamClient.fetchUsage() không bao giờ throw, nhưng chính hàng đợi
+        // có thể từ chối job (ví dụ đang dừng lúc shutdown). Một connection lỗi
+        // không được làm hỏng cả vòng quét — nhất là khi sweep() chạy nền,
+        // không có ai await để bắt lỗi (POST /refresh gọi void sweep()).
+        this.#report(`${conn.id}: ${describe(error)}`)
+      }
     }
 
     store.markSweep()
