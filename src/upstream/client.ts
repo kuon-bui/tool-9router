@@ -1,6 +1,6 @@
 import type { TokenProvider } from "../auth"
-import { classifyUsageResponse, normalizeConnections } from "./normalize"
-import type { Connection, UsageResult } from "../types"
+import { classifyUsageResponse, normalizeApiKeys, normalizeConnections } from "./normalize"
+import type { Connection, RouterApiKey, UsageResult } from "../types"
 
 export type UpstreamClientOptions = {
   baseUrl: string
@@ -26,6 +26,15 @@ export class UpstreamClient {
       throw new Error(`GET /api/providers trả HTTP ${response.status}`)
     }
     return normalizeConnections(await this.#readJson(response))
+  }
+
+  /** Ném lỗi khi thất bại — bên gọi quyết định xử lý thế nào. */
+  async listApiKeys(): Promise<RouterApiKey[]> {
+    const response = await this.#request("/api/keys")
+    if (!response.ok) {
+      throw new Error(`GET /api/keys trả HTTP ${response.status}`)
+    }
+    return normalizeApiKeys(await this.#readJson(response))
   }
 
   /** Không bao giờ ném — mọi thất bại đều thành `{ kind: "error" }`. */

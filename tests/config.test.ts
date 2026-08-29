@@ -54,4 +54,31 @@ describe("loadConfig", () => {
     const cfg = loadConfig({ ...base, DATA_DIR: "C:\\data\\9router" })
     expect(cfg.dataDirOverride).toBe("C:\\data\\9router")
   })
+
+  it("allowRouterApiKeys mặc định false, ttl mặc định 30000", () => {
+    const cfg = loadConfig(base)
+    expect(cfg.allowRouterApiKeys).toBe(false)
+    expect(cfg.routerApiKeysCacheTtlMs).toBe(30_000)
+  })
+
+  it("bật allowRouterApiKeys khi ALLOW_ROUTER_API_KEYS=true", () => {
+    expect(loadConfig({ ...base, ALLOW_ROUTER_API_KEYS: "true" }).allowRouterApiKeys).toBe(true)
+    expect(loadConfig({ ...base, ALLOW_ROUTER_API_KEYS: "1" }).allowRouterApiKeys).toBe(true)
+  })
+
+  it("giữ allowRouterApiKeys false với giá trị khác true/1", () => {
+    expect(loadConfig({ ...base, ALLOW_ROUTER_API_KEYS: "false" }).allowRouterApiKeys).toBe(false)
+    expect(loadConfig({ ...base, ALLOW_ROUTER_API_KEYS: "no" }).allowRouterApiKeys).toBe(false)
+  })
+
+  it("đọc ROUTER_API_KEYS_CACHE_TTL_MS từ env", () => {
+    expect(
+      loadConfig({ ...base, ROUTER_API_KEYS_CACHE_TTL_MS: "5000" }).routerApiKeysCacheTtlMs
+    ).toBe(5_000)
+  })
+
+  it("ném ConfigError khi ROUTER_API_KEYS_CACHE_TTL_MS không hợp lệ", () => {
+    expect(() => loadConfig({ ...base, ROUTER_API_KEYS_CACHE_TTL_MS: "abc" })).toThrow(ConfigError)
+    expect(() => loadConfig({ ...base, ROUTER_API_KEYS_CACHE_TTL_MS: "0" })).toThrow(ConfigError)
+  })
 })

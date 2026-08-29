@@ -28,6 +28,14 @@ Yêu cầu: 9Router đã chạy ít nhất một lần trên máy này, để n�
 
 Mọi endpoint trừ `/health` cần header `x-api-key`.
 
+Mặc định `x-api-key` phải khớp `API_KEY` tĩnh trong `.env`. Bật
+`ALLOW_ROUTER_API_KEYS=true` để cho phép thêm: bất kỳ key nào đang
+`isActive: true` trong danh sách `GET /api/keys` của chính 9Router cũng đăng
+nhập được — additive, không thay thế `API_KEY`. Danh sách này được cache
+trong RAM theo `ROUTER_API_KEYS_CACHE_TTL_MS` (mặc định 30s); nếu gọi sang
+9Router thất bại lúc cần xác minh, request bị từ chối (401) thay vì dùng
+danh sách cache cũ.
+
 | Method | Path | Mô tả |
 |---|---|---|
 | GET | `/health` | Trạng thái vận hành, không cần auth |

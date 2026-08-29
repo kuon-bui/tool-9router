@@ -2,6 +2,7 @@ import { Elysia } from "elysia"
 import { timingSafeEqual } from "node:crypto"
 import type { Config } from "../config"
 import type { TokenProvider } from "../auth"
+import type { RouterKeyCache } from "./routerKeyCache"
 
 export function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a, "utf8")
@@ -16,6 +17,7 @@ export const TOKEN_HINT =
 export type GuardDeps = {
   config: Config
   tokens: TokenProvider
+  routerKeys?: RouterKeyCache | null
 }
 
 /**
@@ -38,15 +40,23 @@ function extractApiKey(headers: Record<string, string | undefined>): string | nu
   return null
 }
 
-export function createGuards({ config, tokens }: GuardDeps) {
+export function createGuards({ config, tokens, routerKeys }: GuardDeps) {
   return new Elysia().macro({
     apiKey: {
-      resolve({ headers, status }) {
+      async resolve({ headers, status }) {
         const provided = extractApiKey(headers)
-        if (provided === null || !safeEqual(provided, config.apiKey)) {
-          return status(401, { error: "Unauthorized" })
+        if (provided === null) return status(401, { error: "Unauthorized" })
+        if (safeEqual(provided, config.apiKey)) return {}
+
+        if (routerKeys) {
+          try {
+            if (await routerKeys.isValid(provided)) return {}
+          } catch {
+            // Không gọi được 9Router để xác minh -> từ chối, không dùng cache cũ.
+          }
         }
-        return {}
+
+        return status(401, { error: "Unauthorized" })
       }
     },
     needsToken: {

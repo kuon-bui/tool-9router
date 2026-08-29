@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test"
-import { classifyUsageResponse, normalizeConnections, normalizePools } from "../../src/upstream"
+import {
+  classifyUsageResponse,
+  normalizeApiKeys,
+  normalizeConnections,
+  normalizePools
+} from "../../src/upstream"
 
 describe("normalizePools", () => {
   it("giữ nguyên tên pool chưa từng thấy", () => {
@@ -117,5 +122,35 @@ describe("normalizeConnections", () => {
   it("trả mảng rỗng khi shape lạ", () => {
     expect(normalizeConnections({})).toEqual([])
     expect(normalizeConnections(null)).toEqual([])
+  })
+})
+
+describe("normalizeApiKeys", () => {
+  it("đọc mảng keys, chỉ giữ key và isActive", () => {
+    const keys = normalizeApiKeys({
+      keys: [
+        {
+          id: "ecd9bd16-20eb-4430-abcb-14d1bdf183e8",
+          key: "sk-4abb1f93d313c5b0-yan8m4-54291fe7",
+          name: "Default Key",
+          machineId: "4abb1f93d313c5b0",
+          isActive: true,
+          createdAt: "2026-08-29T03:55:57.915Z"
+        }
+      ]
+    })
+    expect(keys).toEqual([{ key: "sk-4abb1f93d313c5b0-yan8m4-54291fe7", isActive: true }])
+  })
+
+  it("bỏ qua phần tử thiếu key hoặc isActive không phải boolean", () => {
+    const keys = normalizeApiKeys({
+      keys: [{ key: "k1" }, { isActive: true }, { key: "k2", isActive: false }]
+    })
+    expect(keys).toEqual([{ key: "k2", isActive: false }])
+  })
+
+  it("trả mảng rỗng khi shape lạ", () => {
+    expect(normalizeApiKeys({})).toEqual([])
+    expect(normalizeApiKeys(null)).toEqual([])
   })
 })

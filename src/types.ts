@@ -46,6 +46,11 @@ export type Connection = {
   authType: string | null
 }
 
+export type RouterApiKey = {
+  key: string
+  isActive: boolean
+}
+
 export type UsageResult =
   | { kind: "quotas"; plan: string | null; quotas: Record<string, QuotaPool> }
   | { kind: "message"; message: string }

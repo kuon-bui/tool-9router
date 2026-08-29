@@ -11,6 +11,7 @@ export type FakeRouterOptions = {
   usage?: Record<string, FakeUsage>
   requireToken?: string
   delayMs?: number
+  apiKeys?: unknown
 }
 
 export type FakeRouter = {
@@ -19,12 +20,14 @@ export type FakeRouter = {
   calls: Array<{ path: string; query: Record<string, string>; token: string | null }>
   setConnections(value: unknown): void
   setUsage(id: string, value: FakeUsage): void
+  setApiKeys(value: unknown): void
   stop(): Promise<void>
 }
 
 export async function startFakeRouter(opts: FakeRouterOptions = {}): Promise<FakeRouter> {
   let connections: unknown = opts.connections ?? { connections: [] }
   const usage: Record<string, FakeUsage> = { ...(opts.usage ?? {}) }
+  let apiKeys: unknown = opts.apiKeys ?? { keys: [] }
   const calls: FakeRouter["calls"] = []
 
   const app = new Elysia()
@@ -48,6 +51,12 @@ export async function startFakeRouter(opts: FakeRouterOptions = {}): Promise<Fak
       if (!entry) return status(404, { error: "Not found" })
       return status(entry.status, entry.body)
     })
+    .get("/api/keys", ({ status, request }) => {
+      if (opts.requireToken && request.headers.get("x-9r-cli-token") !== opts.requireToken) {
+        return status(401, { error: "Unauthorized" })
+      }
+      return apiKeys
+    })
     .listen(0)
 
   const port = app.server?.port
@@ -61,6 +70,9 @@ export async function startFakeRouter(opts: FakeRouterOptions = {}): Promise<Fak
     },
     setUsage: (id, value) => {
       usage[id] = value
+    },
+    setApiKeys: (value) => {
+      apiKeys = value
     },
     stop: async () => {
       // force:true đóng cả các kết nối keep-alive đang mở — nếu không, fetch có

@@ -6,6 +6,7 @@ import { SerialQueue } from "../../src/queue"
 import { SnapshotStore } from "../../src/store"
 import { UpstreamClient } from "../../src/upstream"
 import { loadConfig } from "../../src/config"
+import { createRouterKeyCache } from "../../src/guards/routerKeyCache"
 import type { TokenProvider } from "../../src/auth"
 
 const API_KEY = "test-api-key"
@@ -33,16 +34,22 @@ const twoConnections = {
   ]
 }
 
-async function boot(usage: Record<string, { status: 200 | 401 | 404 | 500; body: unknown }>) {
-  router = await startFakeRouter({ connections: twoConnections, usage })
+async function boot(
+  usage: Record<string, { status: 200 | 401 | 404 | 500; body: unknown }>,
+  opts: { configExtra?: Record<string, string>; apiKeys?: unknown } = {}
+) {
+  router = await startFakeRouter({ connections: twoConnections, usage, apiKeys: opts.apiKeys })
   clock = 1_000_000
   tokenReady = true
   store = new SnapshotStore({ staleAfterMs: 600_000, now: () => clock })
   queue = new SerialQueue({ delayMs: 0 })
   const upstream = new UpstreamClient({ baseUrl: router.url, timeoutMs: 2_000, tokens })
   poller = new Poller({ upstream, store, queue, intervalMs: 60_000 })
-  const config = loadConfig({ API_KEY, REFRESH_COOLDOWN_MS: "60000" })
-  app = createServer({ config, store, poller, tokens, now: () => clock })
+  const config = loadConfig({ API_KEY, REFRESH_COOLDOWN_MS: "60000", ...opts.configExtra })
+  const routerKeys = config.allowRouterApiKeys
+    ? createRouterKeyCache({ upstream, ttlMs: config.routerApiKeysCacheTtlMs, now: () => clock })
+    : null
+  app = createServer({ config, store, poller, tokens, now: () => clock, routerKeys })
   await poller.sweep()
 }
 
@@ -110,6 +117,50 @@ describe("xác thực", () => {
       req("/quotas", { headers: { authorization: "Bearer sai-key" } })
     )
     expect(res.status).toBe(401)
+  })
+})
+
+describe("xác thực bằng router API key", () => {
+  it("bật flag, key hợp lệ của 9Router -> 200", async () => {
+    await boot(
+      { c1: { status: 200, body: { quotas: { credit: { used: 1 } } } } },
+      {
+        configExtra: { ALLOW_ROUTER_API_KEYS: "true" },
+        apiKeys: { keys: [{ key: "sk-router-key", isActive: true }] }
+      }
+    )
+    const res = await app!.handle(req("/quotas", { headers: { "x-api-key": "sk-router-key" } }))
+    expect(res.status).toBe(200)
+  })
+
+  it("bật flag nhưng key isActive false -> 401", async () => {
+    await boot(
+      { c1: { status: 200, body: { quotas: { credit: { used: 1 } } } } },
+      {
+        configExtra: { ALLOW_ROUTER_API_KEYS: "true" },
+        apiKeys: { keys: [{ key: "sk-router-key", isActive: false }] }
+      }
+    )
+    const res = await app!.handle(req("/quotas", { headers: { "x-api-key": "sk-router-key" } }))
+    expect(res.status).toBe(401)
+  })
+
+  it("tắt flag (mặc định) -> key hợp lệ của 9Router vẫn 401", async () => {
+    await boot(
+      { c1: { status: 200, body: { quotas: { credit: { used: 1 } } } } },
+      { apiKeys: { keys: [{ key: "sk-router-key", isActive: true }] } }
+    )
+    const res = await app!.handle(req("/quotas", { headers: { "x-api-key": "sk-router-key" } }))
+    expect(res.status).toBe(401)
+  })
+
+  it("bật flag -> API_KEY tĩnh vẫn hoạt động (additive)", async () => {
+    await boot(
+      { c1: { status: 200, body: { quotas: { credit: { used: 1 } } } } },
+      { configExtra: { ALLOW_ROUTER_API_KEYS: "true" } }
+    )
+    const res = await app!.handle(authed("/quotas"))
+    expect(res.status).toBe(200)
   })
 })
 

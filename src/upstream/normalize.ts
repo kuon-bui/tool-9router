@@ -1,4 +1,4 @@
-import type { Connection, QuotaPool, UsageResult } from "../types"
+import type { Connection, QuotaPool, RouterApiKey, UsageResult } from "../types"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -77,6 +77,19 @@ export function normalizeConnections(body: unknown): Connection[] {
       name: stringOrNull(raw.name),
       authType: stringOrNull(raw.authType)
     })
+  }
+  return out
+}
+
+export function normalizeApiKeys(body: unknown): RouterApiKey[] {
+  if (!isRecord(body) || !Array.isArray(body.keys)) return []
+
+  const out: RouterApiKey[] = []
+  for (const raw of body.keys) {
+    if (!isRecord(raw)) continue
+    const key = stringOrNull(raw.key)
+    if (!key || typeof raw.isActive !== "boolean") continue
+    out.push({ key, isActive: raw.isActive })
   }
   return out
 }

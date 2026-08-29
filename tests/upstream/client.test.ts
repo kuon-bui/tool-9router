@@ -112,3 +112,28 @@ describe("fetchUsage", () => {
     expect(result.kind).toBe("error")
   })
 })
+
+describe("listApiKeys", () => {
+  it("trả danh sách key đã chuẩn hoá", async () => {
+    router = await startFakeRouter({
+      apiKeys: { keys: [{ key: "sk-abc", isActive: true, name: "phải bị bỏ" }] }
+    })
+    const keys = await client(router.url).listApiKeys()
+    expect(keys).toEqual([{ key: "sk-abc", isActive: true }])
+  })
+
+  it("gửi header x-9r-cli-token", async () => {
+    router = await startFakeRouter({ requireToken: "abcdef0123456789" })
+    await client(router.url).listApiKeys()
+    expect(router.calls[0]?.token).toBe("abcdef0123456789")
+  })
+
+  it("ném lỗi khi 9Router trả lỗi", async () => {
+    router = await startFakeRouter({ requireToken: "token-khac" })
+    await expect(client(router.url).listApiKeys()).rejects.toThrow(/401/)
+  })
+
+  it("ném lỗi khi không kết nối được", async () => {
+    await expect(client("http://127.0.0.1:1").listApiKeys()).rejects.toThrow()
+  })
+})

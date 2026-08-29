@@ -15,6 +15,8 @@ export type Config = {
   requestDelayMs: number
   refreshCooldownMs: number
   upstreamTimeoutMs: number
+  allowRouterApiKeys: boolean
+  routerApiKeysCacheTtlMs: number
 }
 
 function readPositiveInt(
@@ -62,6 +64,8 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     pollIntervalMs: readPositiveInt(env, "POLL_INTERVAL_MS", 300_000),
     requestDelayMs: readPositiveInt(env, "REQUEST_DELAY_MS", 1_500),
     refreshCooldownMs: readPositiveInt(env, "REFRESH_COOLDOWN_MS", 60_000),
-    upstreamTimeoutMs: readPositiveInt(env, "UPSTREAM_TIMEOUT_MS", 20_000)
+    upstreamTimeoutMs: readPositiveInt(env, "UPSTREAM_TIMEOUT_MS", 20_000),
+    allowRouterApiKeys: ["true", "1"].includes(env.ALLOW_ROUTER_API_KEYS?.trim() ?? ""),
+    routerApiKeysCacheTtlMs: readPositiveInt(env, "ROUTER_API_KEYS_CACHE_TTL_MS", 30_000)
   }
 }

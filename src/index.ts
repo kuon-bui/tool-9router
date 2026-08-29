@@ -1,5 +1,6 @@
 import { createTokenProvider, resolveDataDirFromEnv } from "./auth"
 import { loadConfig } from "./config"
+import { createRouterKeyCache } from "./guards/routerKeyCache"
 import { Poller } from "./poller"
 import { SerialQueue } from "./queue"
 import { createServer } from "./http"
@@ -52,7 +53,11 @@ export async function bootstrap(
     console.warn("[token] hãy chạy 9Router một lần để nó sinh machine-id và auth/cli-secret")
   }
 
-  const app = createServer({ config, store, poller, tokens, now: () => Date.now() })
+  const routerKeys = config.allowRouterApiKeys
+    ? createRouterKeyCache({ upstream, ttlMs: config.routerApiKeysCacheTtlMs, now: () => Date.now() })
+    : null
+
+  const app = createServer({ config, store, poller, tokens, now: () => Date.now(), routerKeys })
   app.listen({ port: config.port, hostname: config.host })
 
   const port = app.server?.port
