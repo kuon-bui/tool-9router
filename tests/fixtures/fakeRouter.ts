@@ -63,7 +63,9 @@ export async function startFakeRouter(opts: FakeRouterOptions = {}): Promise<Fak
       usage[id] = value
     },
     stop: async () => {
-      await app.stop()
+      // force:true đóng cả các kết nối keep-alive đang mở — nếu không, fetch có
+      // thể tái dùng socket cũ và vẫn nhận được response từ server "đã dừng".
+      await app.stop(true)
     }
   }
 }
