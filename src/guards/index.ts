@@ -22,12 +22,28 @@ export type GuardDeps = {
  * Hai macro dùng chung cho mọi route trừ /health: `apiKey` xác thực service
  * bên ngoài, `needsToken` chặn khi chưa đọc được CLI token của 9Router.
  */
+/**
+ * Nhận key qua `x-api-key` hoặc `Authorization: Bearer <key>` — nhiều client
+ * MCP chỉ cho điền một ô token duy nhất và tự đặt nó vào Authorization.
+ */
+function extractApiKey(headers: Record<string, string | undefined>): string | null {
+  const direct = headers["x-api-key"]
+  if (typeof direct === "string") return direct
+
+  const auth = headers["authorization"]
+  if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+    return auth.slice("Bearer ".length)
+  }
+
+  return null
+}
+
 export function createGuards({ config, tokens }: GuardDeps) {
   return new Elysia().macro({
     apiKey: {
       resolve({ headers, status }) {
-        const provided = headers["x-api-key"]
-        if (typeof provided !== "string" || !safeEqual(provided, config.apiKey)) {
+        const provided = extractApiKey(headers)
+        if (provided === null || !safeEqual(provided, config.apiKey)) {
           return status(401, { error: "Unauthorized" })
         }
         return {}

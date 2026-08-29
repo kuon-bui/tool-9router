@@ -97,6 +97,20 @@ describe("xác thực", () => {
     expect(text).not.toContain("abcdef0123456789")
     expect(text).not.toContain(API_KEY)
   })
+
+  it("/quotas với Authorization: Bearer đúng key -> 200", async () => {
+    const res = await app!.handle(
+      req("/quotas", { headers: { authorization: `Bearer ${API_KEY}` } })
+    )
+    expect(res.status).toBe(200)
+  })
+
+  it("/quotas với Authorization: Bearer sai key -> 401", async () => {
+    const res = await app!.handle(
+      req("/quotas", { headers: { authorization: "Bearer sai-key" } })
+    )
+    expect(res.status).toBe(401)
+  })
 })
 
 describe("GET /quotas", () => {
