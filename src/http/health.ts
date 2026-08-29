@@ -2,7 +2,7 @@ import { Elysia } from "elysia"
 import type { TokenProvider } from "../auth"
 import type { Poller } from "../poller"
 import type { SnapshotStore } from "../store"
-import { TOKEN_HINT } from "./guards"
+import { TOKEN_HINT } from "../guards"
 import { healthSchema } from "./schemas"
 
 export type HealthDeps = {

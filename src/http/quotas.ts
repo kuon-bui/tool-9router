@@ -1,6 +1,6 @@
 import { Elysia } from "elysia"
 import { isEntryStatus } from "../types"
-import { createGuards, type GuardDeps } from "./guards"
+import { createGuards, type GuardDeps } from "../guards"
 import type { QuotaService } from "./quotaService"
 import { errorSchema, quotaEntrySchema, quotaListSchema } from "./schemas"
 
