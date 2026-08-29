@@ -1,54 +1,55 @@
-import { t } from "elysia"
+import { z } from "zod"
+import { ENTRY_STATUSES } from "../types"
 
-export const errorSchema = t.Object({
-  error: t.String()
+export const errorSchema = z.object({
+  error: z.string()
 })
 
-export const cooldownErrorSchema = t.Object({
-  error: t.String(),
-  retryAfter: t.Number()
+export const cooldownErrorSchema = z.object({
+  error: z.string(),
+  retryAfter: z.number()
 })
 
-const entryStatusSchema = t.UnionEnum(["ok", "unavailable", "unauthorized", "error", "pending"])
+const entryStatusSchema = z.enum(ENTRY_STATUSES)
 
 /** Tên pool khác nhau theo provider — schema chỉ ràng buộc hình dạng của MỘT pool. */
-const quotaPoolSchema = t.Object({
-  used: t.Nullable(t.Number()),
-  total: t.Nullable(t.Number()),
-  remaining: t.Nullable(t.Number()),
-  resetAt: t.Nullable(t.String()),
-  unlimited: t.Boolean()
+const quotaPoolSchema = z.object({
+  used: z.number().nullable(),
+  total: z.number().nullable(),
+  remaining: z.number().nullable(),
+  resetAt: z.string().nullable(),
+  unlimited: z.boolean()
 })
 
-export const quotaEntrySchema = t.Object({
-  connectionId: t.String(),
-  provider: t.String(),
-  name: t.Nullable(t.String()),
-  authType: t.Nullable(t.String()),
+export const quotaEntrySchema = z.object({
+  connectionId: z.string(),
+  provider: z.string(),
+  name: z.string().nullable(),
+  authType: z.string().nullable(),
   status: entryStatusSchema,
-  plan: t.Nullable(t.String()),
-  quotas: t.Nullable(t.Record(t.String(), quotaPoolSchema)),
-  message: t.Nullable(t.String()),
-  fetchedAt: t.Nullable(t.String()),
-  stale: t.Boolean()
+  plan: z.string().nullable(),
+  quotas: z.record(z.string(), quotaPoolSchema).nullable(),
+  message: z.string().nullable(),
+  fetchedAt: z.string().nullable(),
+  stale: z.boolean()
 })
 
-export const quotaListSchema = t.Object({
-  count: t.Number(),
-  lastSweepAt: t.Nullable(t.String()),
-  entries: t.Array(quotaEntrySchema)
+export const quotaListSchema = z.object({
+  count: z.number(),
+  lastSweepAt: z.string().nullable(),
+  entries: z.array(quotaEntrySchema)
 })
 
-export const healthSchema = t.Object({
-  ok: t.Boolean(),
-  upstream: t.UnionEnum(["up", "down"]),
-  tokenReady: t.Boolean(),
-  hint: t.Nullable(t.String()),
-  connections: t.Number(),
-  lastSweepAt: t.Nullable(t.String())
+export const healthSchema = z.object({
+  ok: z.boolean(),
+  upstream: z.enum(["up", "down"]),
+  tokenReady: z.boolean(),
+  hint: z.string().nullable(),
+  connections: z.number(),
+  lastSweepAt: z.string().nullable()
 })
 
-export const refreshAcceptedSchema = t.Object({
-  accepted: t.Literal(true),
-  connections: t.Number()
+export const refreshAcceptedSchema = z.object({
+  accepted: z.literal(true),
+  connections: z.number()
 })
