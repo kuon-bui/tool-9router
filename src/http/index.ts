@@ -5,6 +5,7 @@ import type { Poller } from "../poller"
 import type { SnapshotStore } from "../store"
 import { createHealthRoutes } from "./health"
 import { createQuotasRoutes } from "./quotas"
+import { createQuotaService } from "./quotaService"
 import { createRefreshRoutes } from "./refresh"
 
 export type ServerDeps = {
@@ -16,8 +17,11 @@ export type ServerDeps = {
 }
 
 export function createServer(deps: ServerDeps) {
+  const { config, store, poller, tokens, now } = deps
+  const quotaService = createQuotaService({ store, poller, config, now })
+
   return new Elysia()
-    .use(createHealthRoutes(deps))
-    .use(createQuotasRoutes(deps))
-    .use(createRefreshRoutes(deps))
+    .use(createHealthRoutes({ store, poller, tokens }))
+    .use(createQuotasRoutes({ config, tokens, quotaService }))
+    .use(createRefreshRoutes({ config, tokens, quotaService }))
 }

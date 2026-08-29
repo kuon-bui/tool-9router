@@ -1,49 +1,53 @@
 import { Elysia } from "elysia"
-import type { Config } from "../config"
-import type { Poller } from "../poller"
-import type { SnapshotStore } from "../store"
 import { createGuards, type GuardDeps } from "./guards"
+import type { QuotaService } from "./quotaService"
+import { cooldownErrorSchema, errorSchema, quotaEntrySchema, refreshAcceptedSchema } from "./schemas"
 
 export type RefreshDeps = GuardDeps & {
-  store: SnapshotStore
-  poller: Poller
-  config: Config
-  now: () => number
+  quotaService: Pick<QuotaService, "refreshOne" | "triggerSweep">
 }
 
 export function createRefreshRoutes(deps: RefreshDeps) {
-  const { store, poller, config, now } = deps
-  const lastRefreshAt = new Map<string, number>()
+  const { quotaService } = deps
 
   return new Elysia()
     .use(createGuards(deps))
     .post(
       "/refresh",
-      ({ status }) => {
-        void poller.sweep()
-        return status(202, { accepted: true, connections: store.size() })
-      },
-      { apiKey: true, needsToken: true }
+      ({ status }) => status(202, quotaService.triggerSweep()),
+      {
+        apiKey: true,
+        needsToken: true,
+        response: { 202: refreshAcceptedSchema, 401: errorSchema, 503: errorSchema }
+      }
     )
     .post(
       "/refresh/:id",
       async ({ params, query, status }) => {
-        if (!store.get(params.id)) {
-          return status(404, { error: `Không có connection ${params.id}` })
-        }
+        const outcome = await quotaService.refreshOne(params.id, query.force === "1")
 
-        const last = lastRefreshAt.get(params.id)
-        const elapsed = last === undefined ? Infinity : now() - last
-        if (elapsed < config.refreshCooldownMs) {
-          const retryAfter = Math.ceil((config.refreshCooldownMs - elapsed) / 1000)
-          return status(429, { error: "Đang trong cooldown refresh", retryAfter })
+        switch (outcome.kind) {
+          case "notFound":
+            return status(404, { error: `Không có connection ${params.id}` })
+          case "cooldown":
+            return status(429, {
+              error: "Đang trong cooldown refresh",
+              retryAfter: outcome.retryAfterSeconds
+            })
+          case "ok":
+            return outcome.entry
         }
-
-        lastRefreshAt.set(params.id, now())
-        const entry = await poller.refreshOne(params.id, query.force === "1")
-        if (!entry) return status(404, { error: `Không có connection ${params.id}` })
-        return entry
       },
-      { apiKey: true, needsToken: true }
+      {
+        apiKey: true,
+        needsToken: true,
+        response: {
+          200: quotaEntrySchema,
+          401: errorSchema,
+          404: errorSchema,
+          429: cooldownErrorSchema,
+          503: errorSchema
+        }
+      }
     )
 }
