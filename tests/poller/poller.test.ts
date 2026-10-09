@@ -156,3 +156,93 @@ describe("refreshOne", () => {
     expect(await poller.refreshOne("khong-co", false)).toBeNull()
   })
 })
+
+describe("reconnect", () => {
+  it("thử kết nối lại liên tục theo reconnectIntervalMs khi khởi động không kết nối được", async () => {
+    let callCount = 0
+    const fakeUpstream = {
+      listConnections: async () => {
+        callCount++
+        if (callCount < 3) {
+          throw new Error("connection refused")
+        }
+        return []
+      },
+      fetchUsage: async () => ({ kind: "ok" as const, data: null })
+    }
+    const store = new SnapshotStore({ staleAfterMs: 600_000, now: () => Date.now() })
+    queue = new SerialQueue({ delayMs: 0 })
+    let recovered = false
+    const poller = new Poller({
+      upstream: fakeUpstream as any,
+      store,
+      queue,
+      intervalMs: 60_000,
+      reconnectIntervalMs: 25,
+      onRecovered: () => {
+        recovered = true
+      }
+    })
+
+    poller.start()
+
+    for (let i = 0; i < 20; i++) {
+      if (poller.upstreamHealthy()) break
+      await new Promise((r) => setTimeout(r, 15))
+    }
+
+    poller.stop()
+
+    expect(callCount).toBeGreaterThanOrEqual(3)
+    expect(poller.upstreamHealthy()).toBe(true)
+    expect(recovered).toBe(true)
+  })
+
+  it("chuyển sang reconnectIntervalMs khi đang chạy bị mất kết nối", async () => {
+    let shouldFail = false
+    let callCount = 0
+    const fakeUpstream = {
+      listConnections: async () => {
+        callCount++
+        if (shouldFail) {
+          throw new Error("lost connection")
+        }
+        return []
+      },
+      fetchUsage: async () => ({ kind: "ok" as const, data: null })
+    }
+    const store = new SnapshotStore({ staleAfterMs: 600_000, now: () => Date.now() })
+    queue = new SerialQueue({ delayMs: 0 })
+    const poller = new Poller({
+      upstream: fakeUpstream as any,
+      store,
+      queue,
+      intervalMs: 60_000,
+      reconnectIntervalMs: 25
+    })
+
+    poller.start()
+    for (let i = 0; i < 20; i++) {
+      if (poller.upstreamHealthy()) break
+      await new Promise((r) => setTimeout(r, 10))
+    }
+    expect(poller.upstreamHealthy()).toBe(true)
+    const initialCalls = callCount
+
+    shouldFail = true
+    await poller.sweep()
+    expect(poller.upstreamHealthy()).toBe(false)
+
+    shouldFail = false
+
+    for (let i = 0; i < 20; i++) {
+      if (poller.upstreamHealthy()) break
+      await new Promise((r) => setTimeout(r, 15))
+    }
+
+    poller.stop()
+    expect(poller.upstreamHealthy()).toBe(true)
+    expect(callCount).toBeGreaterThan(initialCalls + 1)
+  })
+})
+

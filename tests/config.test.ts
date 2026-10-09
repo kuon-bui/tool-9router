@@ -14,6 +14,7 @@ describe("loadConfig", () => {
     expect(cfg.requestDelayMs).toBe(1_500)
     expect(cfg.refreshCooldownMs).toBe(60_000)
     expect(cfg.upstreamTimeoutMs).toBe(20_000)
+    expect(cfg.reconnectIntervalMs).toBe(5_000)
   })
 
   it("ném ConfigError khi thiếu API_KEY", () => {
@@ -25,9 +26,10 @@ describe("loadConfig", () => {
   })
 
   it("đọc giá trị số từ env", () => {
-    const cfg = loadConfig({ ...base, PORT: "31000", POLL_INTERVAL_MS: "60000" })
+    const cfg = loadConfig({ ...base, PORT: "31000", POLL_INTERVAL_MS: "60000", RECONNECT_INTERVAL_MS: "3000" })
     expect(cfg.port).toBe(31_000)
     expect(cfg.pollIntervalMs).toBe(60_000)
+    expect(cfg.reconnectIntervalMs).toBe(3_000)
   })
 
   it("ném ConfigError khi số không hợp lệ", () => {
