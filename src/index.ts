@@ -35,7 +35,9 @@ export async function bootstrap(
     store,
     queue,
     intervalMs: config.pollIntervalMs,
-    onError: (message) => console.warn(`[poller] ${message}`)
+    reconnectIntervalMs: config.reconnectIntervalMs,
+    onError: (message) => console.warn(`[poller] ${message}`),
+    onRecovered: () => console.log("[poller] đã kết nối lại 9Router thành công")
   })
 
   // Tính CLI token một lần, trước khi mở cổng, rồi giữ trong RAM.

@@ -8,32 +8,62 @@ export type PollerDeps = {
   store: SnapshotStore
   queue: SerialQueue
   intervalMs: number
+  reconnectIntervalMs?: number
   onError?: (message: string) => void
+  onRecovered?: () => void
 }
 
 export class Poller {
   #deps: PollerDeps
-  #timer: ReturnType<typeof setInterval> | null = null
+  #timer: ReturnType<typeof setTimeout> | null = null
   #healthy = false
+  #stopped = false
+  #timerStarted = false
+  #hadError = false
 
   constructor(deps: PollerDeps) {
     this.#deps = deps
   }
 
   start(): void {
-    if (this.#timer) return
+    if (this.#timerStarted) return
+    this.#stopped = false
+    this.#timerStarted = true
     void this.sweep()
-    this.#timer = setInterval(() => void this.sweep(), this.#deps.intervalMs)
   }
 
   stop(): void {
-    if (!this.#timer) return
-    clearInterval(this.#timer)
-    this.#timer = null
+    this.#stopped = true
+    this.#timerStarted = false
+    if (this.#timer) {
+      clearTimeout(this.#timer)
+      this.#timer = null
+    }
   }
 
   upstreamHealthy(): boolean {
     return this.#healthy
+  }
+
+  #scheduleNext(): void {
+    if (this.#stopped || !this.#timerStarted) return
+    if (this.#timer) {
+      clearTimeout(this.#timer)
+      this.#timer = null
+    }
+    const delay = this.#healthy
+      ? this.#deps.intervalMs
+      : (this.#deps.reconnectIntervalMs ?? 5_000)
+    // ponytail: setTimeout chu kỳ cố định, nâng cấp exponential backoff nếu 9Router quá tải
+    this.#timer = setTimeout(() => {
+      this.#timer = null
+      void this.#tick()
+    }, delay)
+  }
+
+  async #tick(): Promise<void> {
+    if (this.#stopped || !this.#timerStarted) return
+    await this.sweep()
   }
 
   /**
@@ -48,13 +78,21 @@ export class Poller {
     try {
       connections = await queue.enqueue("__providers__", "low", () => upstream.listConnections())
       this.#healthy = true
+      if (this.#hadError) {
+        this.#hadError = false
+        this.#deps.onRecovered?.()
+      }
     } catch (error) {
       this.#healthy = false
+      this.#hadError = true
       // Không biết trạng thái mới của connection nào — giữ nguyên số liệu cũ
       // nhưng đánh dấu cả snapshot là cũ, đúng yêu cầu "9Router chết giữa
       // chừng vẫn phục vụ snapshot cũ với stale:true".
       store.markAllStale()
       this.#report(`Không lấy được danh sách connection: ${describe(error)}`)
+      if (this.#timerStarted) {
+        this.#scheduleNext()
+      }
       return
     }
 
@@ -73,6 +111,10 @@ export class Poller {
     }
 
     store.markSweep()
+
+    if (this.#timerStarted) {
+      this.#scheduleNext()
+    }
   }
 
   /** Nạp job ưu tiên cao và chờ kết quả. Trả null nếu connection không tồn tại. */
