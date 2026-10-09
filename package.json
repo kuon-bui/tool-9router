@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "build": "bun build --compile src/index.ts --outfile dist/9router-quota-server"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
